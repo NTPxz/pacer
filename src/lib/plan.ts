@@ -30,6 +30,24 @@ export interface Workout {
   detail: string
   km: number
   zone?: ZoneKey
+  /** why the adaptive layer changed this session (shown to the runner) */
+  adapted?: string
+}
+
+export const QUALITY: Kind[] = ['threshold', 'interval', 'rep', 'marathon', 'fartlek']
+export const isQuality = (k: Kind) => QUALITY.includes(k)
+
+/** adjustments the adaptive layer (adapt.ts) asks the generator to apply to one week */
+export interface WeekMod {
+  /** multiply weekly volume */
+  volume?: number
+  /** add to the week's VDOT (negative = slower paces) */
+  vdot?: number
+  /** swap the second quality session for easy running */
+  downgrade?: boolean
+  /** coming back from a break: no hard sessions at all */
+  reentry?: boolean
+  reason?: string
 }
 
 export interface Week {
@@ -41,6 +59,7 @@ export interface Week {
   days: Workout[]
   /** fitness the week's paces are based on */
   vdot: number
+  mod?: WeekMod
 }
 
 export type Ambition = 'easy' | 'normal' | 'hard'
@@ -49,6 +68,8 @@ export interface PlanInput {
   vdot: number
   /** fitness expected on race day — see targetVdot() */
   targetVdot: number
+  /** per-week adjustments keyed by week index (0-based) */
+  mods?: Record<number, WeekMod>
   goal: RaceKey
   weeks: number
   daysPerWeek: 3 | 4 | 5 | 6
@@ -321,10 +342,12 @@ export function buildPlan(input: PlanInput): Week[] {
     let weekly = startKm + (peakKm - startKm) * ramp
     if (cutback) weekly *= 0.8
     if (phase === 'taper') weekly = peakKm * (isLast ? 0.5 : 0.72)
+    const mod = input.mods?.[i]
+    if (mod?.volume) weekly *= mod.volume
 
     const len = phaseLen(phase)
     const prog = len > 1 ? wip / (len - 1) : 1
-    const weekVdot = vdot + (goalVdot - vdot) * PHASE_GAIN[phase]
+    const weekVdot = vdot + (goalVdot - vdot) * PHASE_GAIN[phase] + (mod?.vdot ?? 0)
     z = zoneMap(weekVdot)
     const layout = LAYOUT[daysPerWeek]
     const days: Workout[] = []
@@ -333,7 +356,7 @@ export function buildPlan(input: PlanInput): Week[] {
       for (let d = 0; d < 7; d++) {
         const slot = layout[d]
         if (isLast && d === 6) {
-          const t = predictSeconds(goalVdot, RACE_METERS[goal])
+          const t = predictSeconds(goalVdot + (mod?.vdot ?? 0), RACE_METERS[goal])
           const now = predictSeconds(vdot, RACE_METERS[goal])
           const faster = Math.round(now) - Math.round(t)
           days.push({
@@ -361,8 +384,14 @@ export function buildPlan(input: PlanInput): Week[] {
       }
     } else {
       const longKm = clamp(weekly * LONG_SHARE[goal], 6, LONG_CAP[goal])
-      const q1 = quality(phase, 'Q1', weekly, prog, cutback, wip, len)
-      const q2 = quality(phase, 'Q2', weekly, prog, cutback, wip, len)
+      let q1 = quality(phase, 'Q1', weekly, prog, cutback, wip, len)
+      let q2 = quality(phase, 'Q2', weekly, prog, cutback, wip, len)
+      if (mod?.reentry) {
+        q1 = { ...strides(weekly * 0.14), adapted: mod.reason }
+        q2 = { ...easy(weekly * 0.14), adapted: mod.reason }
+      } else if (mod?.downgrade && isQuality(q2.kind)) {
+        q2 = { ...strides(weekly * 0.13), adapted: mod.reason }
+      }
       const eDays = Object.values(layout).filter((s) => s === 'E').length
       const used = longKm + q1.km + q2.km
       // a single easy day should never outgrow the long run
@@ -387,7 +416,21 @@ export function buildPlan(input: PlanInput): Week[] {
       start,
       days,
       vdot: weekVdot,
+      mod,
     })
   }
   return result
+}
+
+/** a stand-alone easy run at the given fitness, used when the day's plan is softened */
+export function easySession(km: number, vdot: number, detailSuffix = ''): Workout {
+  const e = zonesFor(vdot).find((z) => z.key === 'E')!
+  const k = half(km)
+  return {
+    kind: 'easy',
+    title: KIND_LABEL.easy,
+    detail: `${k} กม. @ ${fmtPace(e.fast)}–${fmtPace(e.slow)}/กม.${detailSuffix}`,
+    km: k,
+    zone: 'E',
+  }
 }

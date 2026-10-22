@@ -2524,3 +2524,404 @@ textarea.text-input {
     justify-content: center;
   }
 }
+
+/* ───────── today / adaptive log ───────── */
+.today {
+  position: relative;
+  margin-bottom: 28px;
+  padding: 20px 22px 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 16px;
+  background: var(--card);
+  overflow: hidden;
+}
+.today::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--track);
+}
+.today.is-idle h3 {
+  margin: 6px 0 4px;
+  font-family: var(--display);
+  font-size: 26px;
+}
+.today.is-idle h3 b {
+  color: var(--track);
+}
+.today.is-idle p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.today-head {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 14px;
+}
+.today-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 12.5px;
+  color: var(--mute);
+}
+.today-stats b {
+  font-family: var(--display);
+  font-stretch: 85%;
+  font-size: 16px;
+  color: var(--ink);
+}
+.today-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.today-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.today-title h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.15;
+}
+.today-km {
+  font-family: var(--display);
+  font-weight: 800;
+  font-stretch: 72%;
+  font-size: 40px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.today-km small {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--mute);
+  margin-left: 3px;
+}
+.today-detail {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+.today-next {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--rule);
+  font-size: 13px;
+  color: var(--mute);
+}
+.adapted-tag {
+  display: block;
+  margin: 6px 0 0;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--track);
+}
+.today-log {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.today-log .link {
+  align-self: flex-start;
+  font-size: 13px;
+}
+.today-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.today-actions button,
+.chips button[data-status],
+.chips button[data-effort] {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  border-radius: 10px;
+  padding: 10px 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+}
+.chips button[data-status],
+.chips button[data-effort] {
+  border-radius: 999px;
+  padding: 7px 14px;
+}
+.today-actions button:active {
+  transform: scale(0.96);
+}
+.today-actions button.is-active[data-status='done'],
+.chips button.is-active[data-status='done'] {
+  background: var(--z-E);
+  border-color: var(--z-E);
+  color: #fff;
+}
+.today-actions button.is-active[data-status='partial'],
+.chips button.is-active[data-status='partial'] {
+  background: var(--z-T);
+  border-color: var(--z-T);
+  color: #2b1d00;
+}
+.today-actions button.is-active[data-status='missed'],
+.chips button.is-active[data-status='missed'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.chips button[data-effort].is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.adjustments {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+.adjustments li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 13.5px;
+  padding-left: 12px;
+  border-left: 3px solid var(--z-M);
+}
+.adjustments li[data-tone='down'] {
+  border-left-color: var(--z-T);
+}
+.adjustments li[data-tone='up'] {
+  border-left-color: var(--z-E);
+}
+.adjustments .mono-label {
+  flex-shrink: 0;
+}
+.today-past-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--mute);
+}
+.log-planned {
+  margin: -8px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.danger-text {
+  margin-right: auto;
+  color: #b3261e;
+}
+
+/* battery check-in */
+.battery {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.battery button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 2px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper);
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+.battery button:active {
+  transform: scale(0.95);
+}
+.battery-icon {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1.5px solid var(--ink-2);
+  border-radius: 3px;
+  position: relative;
+}
+.battery-icon::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 3px;
+  width: 2px;
+  height: 5px;
+  border-radius: 0 1px 1px 0;
+  background: var(--ink-2);
+}
+.battery-icon i {
+  width: 3px;
+  height: 8px;
+  border-radius: 1px;
+  background: transparent;
+}
+.battery button[data-level='1'] .battery-icon i.on { background: #c2462a; }
+.battery button[data-level='2'] .battery-icon i.on { background: #d97a2b; }
+.battery button[data-level='3'] .battery-icon i.on { background: #d39b1f; }
+.battery button[data-level='4'] .battery-icon i.on { background: #7aa35f; }
+.battery button[data-level='5'] .battery-icon i.on { background: #4f8a55; }
+.battery-label {
+  font-size: 11.5px;
+  color: var(--mute);
+  white-space: nowrap;
+}
+.battery button.is-active {
+  border-color: var(--ink);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.battery button.is-active .battery-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* day tiles become buttons for logging */
+button.day {
+  position: relative;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+button.day:disabled {
+  cursor: default;
+}
+button.day:not(:disabled):hover {
+  box-shadow: inset 0 0 0 1px var(--tone);
+}
+.day.is-today {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.day.is-today .day-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.day[data-adapted]::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--track);
+}
+.day-mark {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--z-E);
+  color: #fff;
+}
+.day[data-status='partial'] .day-mark {
+  background: var(--z-T);
+  color: #2b1d00;
+}
+.day[data-status='missed'] .day-mark {
+  background: var(--ink);
+  color: var(--paper);
+}
+.day[data-status='missed'] .day-kind,
+.day[data-status='missed'] .day-km {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.week.is-current {
+  border-color: var(--track);
+  box-shadow: 0 0 0 1px var(--track);
+}
+.wd-log {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--z-E);
+}
+.wd-log[data-status='partial'] {
+  color: #a87700;
+}
+.wd-log[data-status='missed'] {
+  color: var(--mute);
+}
+
+/* actual km inside the planned bar */
+.volume-bar {
+  position: relative;
+  overflow: hidden;
+}
+.volume-bar[data-tracked] {
+  background: color-mix(in srgb, var(--tone) 30%, transparent);
+}
+.volume-done {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--tone);
+}
+
+@media (max-width: 760px) {
+  .today-body {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+@media (max-width: 640px) {
+  .today {
+    padding: 16px 16px 14px;
+  }
+  .day-mark {
+    position: static;
+    margin-left: 8px;
+  }
+  .day.is-today {
+    box-shadow: inset 0 0 0 2px var(--ink);
+  }
+  button.day {
+    border-left: 3px solid var(--tone);
+  }
+  .day {
+    grid-template-columns: 44px 1fr auto auto;
+  }
+}
+@media print {
+  .today {
+    display: none !important;
+  }
+}
+
+/* Thai text in the small labels reads badly with tracked-out monospace */
+.today .mono-label,
+.sheet-head .mono-label {
+  font-family: var(--body);
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12.5px;
+}

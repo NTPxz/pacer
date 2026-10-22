@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useInView } from 'framer-motion'
+import { adaptPlan, weeklyDone } from '../lib/adapt'
 import {
-  buildPlan,
   KIND_LABEL,
   mondayOf,
   PHASE_LABEL,
@@ -13,7 +14,10 @@ import {
   type Week,
 } from '../lib/plan'
 import { fmtPace, fmtTime, predictSeconds, RACE_LABEL, RACE_METERS, type RaceKey } from '../lib/vdot'
+import { isoDate, loadLog, saveLog, STATUS_LABEL, today, type DayLog, type TrainingLog } from '../lib/training-log'
+import { DayLogSheet } from './DayLogSheet'
 import { Roll } from './Roll'
+import { TodayCard } from './TodayCard'
 import { Segmented } from './Segmented'
 
 export interface PlanSettings {
@@ -75,22 +79,37 @@ export function PlanBuilder({
   const ambition = settings.ambition ?? 'normal'
   const goalVdot = targetVdot(vdot, settings.weeks, ambition)
   const goalMeters = RACE_METERS[settings.goal]
-  const targetTime = predictSeconds(goalVdot, goalMeters)
   const nowTime = predictSeconds(vdot, goalMeters)
 
-  const plan = useMemo(
+  const now = useMemo(today, [])
+  const [log, setLog] = useState<TrainingLog>(loadLog)
+  useEffect(() => saveLog(log), [log])
+  const [logging, setLogging] = useState<{ w: number; d: number } | null>(null)
+  const patchLog = (iso: string, patch: Partial<DayLog>) =>
+    setLog((prev) => ({ ...prev, [iso]: { ...prev[iso], ...patch } }))
+
+  const adapted = useMemo(
     () =>
-      buildPlan({
-        vdot,
+      adaptPlan(
+        {
+          vdot,
         targetVdot: goalVdot,
         goal: settings.goal,
         weeks: settings.weeks,
         daysPerWeek: settings.days,
         startKm,
-        startDate: parseDate(settings.startDate),
-      }),
-    [vdot, goalVdot, settings.goal, settings.weeks, settings.days, settings.startDate, startKm],
+          startDate: parseDate(settings.startDate),
+        },
+        log,
+        now,
+      ),
+    [vdot, goalVdot, settings.goal, settings.weeks, settings.days, settings.startDate, startKm, log, now],
   )
+  const plan = adapted.plan
+  const done = useMemo(() => weeklyDone(plan, log), [plan, log])
+  const targetTime = predictSeconds(adapted.targetVdot, goalMeters)
+  const dayDate = (w: number, d: number) => plusDays(plan[w].start, d)
+  const openDay = (w: number, d: number) => setLogging({ w, d })
 
   const [open, setOpen] = useState<Set<number>>(() => new Set([1]))
   const toggle = (n: number) =>
@@ -202,6 +221,8 @@ export function PlanBuilder({
       </aside>
 
       <div className="plan-out">
+        <TodayCard adapted={adapted} log={log} now={now} onPatch={patchLog} onOpen={openDay} />
+
         <dl className="summary">
           <div>
             <dt>วันแข่ง {RACE_LABEL[settings.goal]}</dt>
@@ -230,7 +251,7 @@ export function PlanBuilder({
           </div>
         </dl>
 
-        <VolumeChart plan={plan} peak={peak} onPick={(n) => {
+        <VolumeChart plan={plan} done={done} peak={peak} onPick={(n) => {
           setOpen((prev) => new Set(prev).add(n))
           document.getElementById(`week-${n}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
         }} />
@@ -255,31 +276,94 @@ export function PlanBuilder({
 
         <ol className="weeks">
           {plan.map((w) => (
-            <WeekCard key={w.n} week={w} startsOn={chosenStart} open={open.has(w.n)} onToggle={() => toggle(w.n)} />
+            <WeekCard
+              key={w.n}
+              week={w}
+              startsOn={chosenStart}
+              now={now}
+              log={log}
+              current={adapted.currentWeek === w.n - 1}
+              open={open.has(w.n)}
+              onToggle={() => toggle(w.n)}
+              onOpenDay={(d) => openDay(w.n - 1, d)}
+            />
           ))}
         </ol>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {logging && plan[logging.w] && (
+            <DayLogSheet
+              key={`${logging.w}-${logging.d}`}
+              date={dayDate(logging.w, logging.d)}
+              workout={plan[logging.w].days[logging.d]}
+              value={log[isoDate(dayDate(logging.w, logging.d))]}
+              onSave={(l) => {
+                setLog((prev) => ({ ...prev, [isoDate(dayDate(logging.w, logging.d))]: l }))
+                setLogging(null)
+              }}
+              onDelete={() => {
+                setLog((prev) => {
+                  const next = { ...prev }
+                  delete next[isoDate(dayDate(logging.w, logging.d))]
+                  return next
+                })
+                setLogging(null)
+              }}
+              onClose={() => setLogging(null)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </div>
   )
 }
 
-function VolumeChart({ plan, peak, onPick }: { plan: Week[]; peak: number; onPick: (n: number) => void }) {
+function VolumeChart({
+  plan,
+  done,
+  peak,
+  onPick,
+}: {
+  plan: Week[]
+  done: (number | null)[]
+  peak: number
+  onPick: (n: number) => void
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const seen = useInView(ref, { once: true, margin: '-60px' })
   return (
     <div className="volume" aria-label="ระยะวิ่งรายสัปดาห์" ref={ref}>
       <div className="volume-bars">
         {plan.map((w, i) => (
-          <button key={w.n} type="button" className="volume-col" onClick={() => onPick(w.n)} title={`สัปดาห์ ${w.n}: ${w.km} กม.`}>
-            <span className="volume-km">{w.km}</span>
+          <button
+            key={w.n}
+            type="button"
+            className="volume-col"
+            onClick={() => onPick(w.n)}
+            title={`สัปดาห์ ${w.n}: แผน ${w.km} กม.${done[i] != null ? ` · ทำได้ ${done[i]} กม.` : ''}`}
+          >
+            <span className="volume-km">{done[i] != null ? `${done[i]}/${w.km}` : w.km}</span>
             <motion.span
               className="volume-bar"
               data-tone={PHASE_TONE[w.phase]}
               data-cutback={w.cutback || undefined}
+              data-tracked={done[i] != null || undefined}
               initial={{ height: '0%' }}
               animate={{ height: seen ? `${(w.km / peak) * 100}%` : '0%' }}
               transition={{ type: 'spring', stiffness: 120, damping: 18, delay: i * 0.025 }}
-            />
+            >
+              {done[i] != null && (
+                <motion.span
+                  className="volume-done"
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.min(1, (done[i] ?? 0) / Math.max(1, w.km)) * 100}%` }}
+                  transition={{ type: 'spring', stiffness: 140, damping: 20 }}
+                />
+              )}
+            </motion.span>
             <span className="volume-n">{w.n}</span>
           </button>
         ))}
@@ -301,21 +385,32 @@ function VolumeChart({ plan, peak, onPick }: { plan: Week[]; peak: number; onPic
 function WeekCard({
   week,
   startsOn,
+  now,
+  log,
+  current,
   open,
   onToggle,
+  onOpenDay,
 }: {
   week: Week
   startsOn: Date
+  now: Date
+  log: TrainingLog
+  current: boolean
   open: boolean
   onToggle: () => void
+  onOpenDay: (d: number) => void
 }) {
+  const logOf = (i: number) => log[isoDate(plusDays(week.start, i))]
+  const loggable = (i: number) => plusDays(week.start, i).getTime() <= now.getTime()
+  const isToday = (i: number) => plusDays(week.start, i).getTime() === now.getTime()
   const end = plusDays(week.start, 6)
   // days in the first week that fall before the chosen start date
   const before = (i: number) => plusDays(week.start, i).getTime() < startsOn.getTime()
   return (
     <motion.li
       id={`week-${week.n}`}
-      className={`week ${open ? 'is-open' : ''}`}
+      className={`week ${open ? 'is-open' : ''} ${current ? 'is-current' : ''}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-30px' }}
@@ -352,16 +447,32 @@ function WeekCard({
 
       <div className="days">
         {week.days.map((d, i) => (
-          <div
+          <button
+            type="button"
             key={i}
-            className={`day ${before(i) ? 'is-before' : ''}`}
+            className={`day ${before(i) ? 'is-before' : ''} ${isToday(i) ? 'is-today' : ''}`}
             data-tone={KIND_TONE[d.kind]}
-            title={before(i) ? 'ก่อนวันเริ่มตาราง' : undefined}
+            data-status={logOf(i)?.status}
+            data-adapted={d.adapted ? true : undefined}
+            disabled={!loggable(i)}
+            onClick={() => onOpenDay(i)}
+            title={
+              before(i)
+                ? 'ก่อนวันเริ่มตาราง'
+                : loggable(i)
+                  ? `บันทึกผลวัน${DAY[i]}${logOf(i)?.status ? ` (${STATUS_LABEL[logOf(i)!.status!]})` : ''}`
+                  : undefined
+            }
           >
-            <span className="day-name">{DAY[i]}</span>
+            <span className="day-name">{isToday(i) ? 'วันนี้' : DAY[i]}</span>
             <span className="day-kind">{d.kind === 'race' ? KIND_LABEL.race : d.title}</span>
             <span className="day-km">{d.km ? `${d.km}` : '—'}</span>
-          </div>
+            {logOf(i)?.status && (
+              <span className="day-mark" aria-label={STATUS_LABEL[logOf(i)!.status!]}>
+                {logOf(i)!.status === 'done' ? '✓' : logOf(i)!.status === 'partial' ? '½' : '✕'}
+              </span>
+            )}
+          </button>
         ))}
       </div>
 
@@ -376,7 +487,7 @@ function WeekCard({
           >
             <ul>
               {week.days.map((d, i) =>
-                d.kind === 'rest' ? null : (
+                d.kind === 'rest' && !d.adapted ? null : (
                   <li key={i} data-tone={KIND_TONE[d.kind]} className={before(i) ? 'is-before' : undefined}>
                     <span className="wd-day">
                       {DAY[i]} <small>{fmtDate(plusDays(week.start, i))}</small>
@@ -384,6 +495,14 @@ function WeekCard({
                     <span className="wd-body">
                       <strong>{d.title}</strong>
                       {d.detail}
+                      {d.adapted && <em className="adapted-tag">ปรับแล้ว · {d.adapted}</em>}
+                      {logOf(i)?.status && (
+                        <em className="wd-log" data-status={logOf(i)!.status}>
+                          {STATUS_LABEL[logOf(i)!.status!]}
+                          {logOf(i)!.km != null && logOf(i)!.status !== 'missed' ? ` ${logOf(i)!.km} กม.` : ''}
+                          {logOf(i)!.note ? ` — ${logOf(i)!.note}` : ''}
+                        </em>
+                      )}
                     </span>
                     <span className="wd-km">{d.km} กม.</span>
                   </li>
