@@ -153,7 +153,13 @@ src/
 └── styles.css           design tokens (light/dark) และ layout ทั้งหมด
 ```
 
-**Stack:** React 18 · TypeScript · Vite · Framer Motion — ไม่ใช้ UI kit หรือ CSS framework
+**Stack:** React 18 · TypeScript · Vite · Framer Motion · Supabase · Vercel Functions — ไม่ใช้ UI kit หรือ CSS framework
+
+## บัญชีผู้ใช้ & คลาวด์ (ไม่บังคับ)
+
+ใช้แบบ **guest** ได้ทันทีโดยไม่ต้องสมัคร หรือ **เข้าสู่ระบบด้วย Google / Facebook** เพื่อซิงก์ตารางซ้อม บันทึกการซ้อม และตู้ถ้วยพร้อมรูปข้ามอุปกรณ์ — backend คือ Supabase (Auth + Postgres + Storage พร้อม Row Level Security) และ Vercel Function สำหรับลบบัญชี
+
+วิธีตั้งค่าทีละขั้น: [docs/SETUP-auth.md](docs/SETUP-auth.md)
 
 ## ช่องทางสนับสนุน
 

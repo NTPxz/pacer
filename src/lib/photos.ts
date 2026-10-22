@@ -74,11 +74,31 @@ export async function deletePhotos(ids: string[]) {
   if (!ids.length) return
   ids.forEach(revoke)
   await tx('readwrite', (s) => ids.forEach((id) => s.delete(id)))
+  remote?.remove(ids).catch(() => {})
+}
+
+// cloud backing for signed-in users (wired up by sync.ts); photos missing locally are fetched on demand
+interface RemotePhotos {
+  download: (id: string) => Promise<Blob | undefined>
+  remove: (ids: string[]) => Promise<void>
+}
+let remote: RemotePhotos | null = null
+export function setRemotePhotos(r: RemotePhotos | null) {
+  remote = r
 }
 
 export async function getBlob(id: string): Promise<Blob | undefined> {
   const row = (await tx<PhotoRow>('readonly', (s) => s.get(id) as IDBRequest<PhotoRow>)) as PhotoRow | undefined
-  return row?.blob
+  if (row?.blob || !remote) return row?.blob
+  const blob = await remote.download(id).catch(() => undefined)
+  if (blob) await tx('readwrite', (s) => s.put({ id, blob } satisfies PhotoRow))
+  return blob
+}
+
+/** wipe every stored photo (sign-out) */
+export async function clearPhotos() {
+  ;[...urls.keys()].forEach(revoke)
+  await tx('readwrite', (s) => s.clear())
 }
 
 // ---------- object URL cache shared by every <img> ----------

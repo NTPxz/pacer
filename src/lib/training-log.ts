@@ -1,4 +1,5 @@
 import type { Kind } from './plan'
+import { persist } from './sync'
 
 /** how the runner felt before the session — drives same-day adjustments */
 export type Feeling = 1 | 2 | 3 | 4 | 5
@@ -54,11 +55,7 @@ export function loadLog(): TrainingLog {
 }
 
 export function saveLog(log: TrainingLog) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify(log))
-  } catch {
-    /* storage unavailable */
-  }
+  persist('log', log)
 }
 
 export const isoDate = (d: Date) =>

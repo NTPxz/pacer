@@ -7,9 +7,11 @@ import { Predictions } from './components/Predictions'
 import { PlanBuilder, type PlanSettings } from './components/PlanBuilder'
 import { TrophyCase } from './components/TrophyCase'
 import { Donate } from './components/Donate'
+import { AccountButton } from './components/Account'
 import { fmtPace, fmtTime, predictSeconds, RACE_LABEL, RACE_METERS, vdotFrom, zonesFor, type RaceKey } from './lib/vdot'
 import { DIST_SHORT, type Race } from './lib/races'
 import { nextMonday } from './lib/plan'
+import { persist } from './lib/sync'
 
 // storage keys keep the old 'pacer' prefix so existing users don't lose their data
 const STORE = 'pacer:v1'
@@ -95,11 +97,7 @@ export default function App() {
   const zones = useMemo(() => zonesFor(vdot), [vdot])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORE, JSON.stringify({ pb: lastValid.current, dist, plan }))
-    } catch {
-      /* storage unavailable — settings just won't persist */
-    }
+    persist('settings', { pb: lastValid.current, dist, plan })
   }, [pb, dist, plan])
 
   /** switch distance but keep the same fitness: the time morphs to its equivalent */
@@ -153,6 +151,7 @@ export default function App() {
             <i>04</i> ตู้ถ้วย
           </a>
         </nav>
+        <AccountButton />
       </header>
 
       <main id="top">

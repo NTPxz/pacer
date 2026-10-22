@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>นโยบายความเป็นส่วนตัว — TAYAN</title>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<style>
+  :root { --paper:#efeae1; --ink:#161513; --mute:#6b665e; --track:#c2462a; --rule:#cdc5b6; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --paper:#131210; --ink:#efe9de; --mute:#8d867a; --rule:#2f2c27; } }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.7 'IBM Plex Sans Thai', system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 16px 80px; }
+  a { color: var(--track); }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 4px; }
+  h2 { font-size: 19px; margin: 32px 0 6px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .muted { color: var(--mute); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">← กลับไปที่ TAYAN</a></p>
+  <h1>นโยบายความเป็นส่วนตัว</h1>
+  <p class="muted">ปรับปรุงล่าสุด 22 ตุลาคม 2569</p>
+
+  <h2>ใช้แบบ guest</h2>
+  <p>ข้อมูลทั้งหมด (เวลาที่ดีที่สุด ตารางซ้อม บันทึกการซ้อม ตู้ถ้วย และรูป) เก็บอยู่ในเบราว์เซอร์ของเครื่องคุณเท่านั้น ไม่มีการส่งไปที่เซิร์ฟเวอร์ใด</p>
+
+  <h2>เมื่อเข้าสู่ระบบด้วย Google หรือ Facebook</h2>
+  <ul>
+    <li>เราได้รับเฉพาะ <b>ชื่อ อีเมล และรูปโปรไฟล์</b> จากผู้ให้บริการ เพื่อระบุบัญชีและแสดงผลในแอป ไม่ขอสิทธิ์โพสต์ ไม่อ่านรายชื่อเพื่อน</li>
+    <li>ข้อมูลการซ้อมและรูปในตู้ถ้วยถูกเก็บบน Supabase เพื่อซิงก์ข้ามอุปกรณ์ เข้าถึงได้เฉพาะเจ้าของบัญชี (บังคับด้วย Row Level Security)</li>
+    <li>เราไม่ขาย ไม่แชร์ และไม่ใช้ข้อมูลของคุณเพื่อโฆษณา ไม่มีระบบติดตามจากบุคคลที่สาม</li>
+    <li>เว็บโฮสต์บน Vercel และ GitHub Pages ซึ่งอาจเก็บ log การเข้าถึงตามปกติของผู้ให้บริการ</li>
+  </ul>
+
+  <h2 id="delete">การลบข้อมูล</h2>
+  <p>ลบได้ทันทีด้วยตัวเอง: เข้าสู่ระบบ → แตะรูปโปรไฟล์มุมขวาบน → <b>ลบบัญชีและข้อมูล</b> บัญชี ข้อมูลการซ้อม และรูปทั้งหมดบนคลาวด์จะถูกลบถาวร</p>
+  <p>หากเข้าสู่ระบบไม่ได้ แจ้งขอลบข้อมูลได้ที่ <a href="https://github.com/NTPxz/pacer/issues/new">GitHub Issues</a> หรือเพิกถอนการเชื่อมต่อแอปได้ในการตั้งค่า Google / Facebook ของคุณ</p>
+
+  <h2>ติดต่อ</h2>
+  <p>โปรเจกต์โอเพนซอร์ส (MIT) — <a href="https://github.com/NTPxz/pacer">github.com/NTPxz/pacer</a></p>
+</main>
+</body>
+</html>

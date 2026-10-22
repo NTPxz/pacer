@@ -1,5 +1,6 @@
 import type { Overlay } from './overlay'
 import { exportPhotos } from './photos'
+import { persist } from './sync'
 import { RACE_METERS, vdotFrom, type RaceKey } from './vdot'
 
 export type DistKey = RaceKey | 'other'
@@ -50,11 +51,7 @@ export function loadRaces(): Race[] {
 }
 
 export function saveRaces(races: Race[]) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify(races))
-  } catch {
-    /* storage unavailable */
-  }
+  persist('races', races)
 }
 
 function isRace(r: unknown): r is Race {
