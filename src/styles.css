@@ -1810,6 +1810,11 @@ textarea.text-input {
   }
 }
 
+.day.is-before,
+.week-detail li.is-before {
+  opacity: 0.35;
+}
+
 /* ───────── footer ───────── */
 .footer {
   max-width: 1320px;

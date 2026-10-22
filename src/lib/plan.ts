@@ -113,6 +113,13 @@ function nextMonday(from: Date): Date {
   return d
 }
 
+/** Monday of the Mon–Sun week that contains `d` */
+export function mondayOf(d: Date): Date {
+  const m = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  m.setDate(m.getDate() - ((m.getDay() + 6) % 7))
+  return m
+}
+
 export { nextMonday }
 
 export function buildPlan(input: PlanInput): Week[] {
@@ -124,7 +131,8 @@ export function buildPlan(input: PlanInput): Week[] {
   const phaseOf = phases(weeks, goal)
   const lastBuildWeek = phaseOf.lastIndexOf('peak')
   const peakKm = startKm * PEAK_GROWTH[goal]
-  const monday = nextMonday(input.startDate)
+  // the plan is laid out Mon–Sun, so it begins on the week of the chosen date
+  const monday = mondayOf(input.startDate)
 
   const warm = (weekly: number) => (weekly < 30 ? 1.5 : 2)
 

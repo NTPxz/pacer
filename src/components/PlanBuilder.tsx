@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useInView } from 'framer-motion'
-import { buildPlan, KIND_LABEL, PHASE_LABEL, suggestedStartKm, type Kind, type Phase, type Week } from '../lib/plan'
+import { buildPlan, KIND_LABEL, mondayOf, PHASE_LABEL, suggestedStartKm, type Kind, type Phase, type Week } from '../lib/plan'
 import { RACE_LABEL, type RaceKey } from '../lib/vdot'
 import { Segmented } from './Segmented'
 
@@ -53,6 +53,10 @@ export function PlanBuilder({
   const suggested = suggestedStartKm(vdot, settings.days, settings.goal)
   const startKm = settings.startKm ?? suggested
   const set = (patch: Partial<PlanSettings>) => onChange({ ...settings, ...patch })
+
+  const chosenStart = parseDate(settings.startDate)
+  const planMonday = mondayOf(chosenStart)
+  const offWeekStart = chosenStart.getTime() !== planMonday.getTime()
 
   const plan = useMemo(
     () =>
@@ -145,8 +149,19 @@ export function PlanBuilder({
           </span>
         </div>
         <label className="field">
-          <span className="field-label">เริ่มสัปดาห์ของวันที่</span>
-          <input type="date" value={settings.startDate} onChange={(e) => set({ startDate: e.target.value })} />
+          <span className="field-label">เริ่มซ้อมวันที่</span>
+          <input
+            type="date"
+            value={settings.startDate}
+            onChange={(e) => e.target.value && set({ startDate: e.target.value })}
+          />
+          {offWeekStart && (
+            <span className="field-hint">
+              ตารางจัดเป็นสัปดาห์ จ.–อา. จึงเริ่มสัปดาห์ของ{' '}
+              {planMonday.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'short' })} — วันก่อน{' '}
+              {fmtDate(chosenStart)} จะแสดงเป็นสีจาง
+            </span>
+          )}
         </label>
       </aside>
 
@@ -201,7 +216,7 @@ export function PlanBuilder({
 
         <ol className="weeks">
           {plan.map((w) => (
-            <WeekCard key={w.n} week={w} open={open.has(w.n)} onToggle={() => toggle(w.n)} />
+            <WeekCard key={w.n} week={w} startsOn={chosenStart} open={open.has(w.n)} onToggle={() => toggle(w.n)} />
           ))}
         </ol>
       </div>
@@ -244,8 +259,20 @@ function VolumeChart({ plan, peak, onPick }: { plan: Week[]; peak: number; onPic
   )
 }
 
-function WeekCard({ week, open, onToggle }: { week: Week; open: boolean; onToggle: () => void }) {
+function WeekCard({
+  week,
+  startsOn,
+  open,
+  onToggle,
+}: {
+  week: Week
+  startsOn: Date
+  open: boolean
+  onToggle: () => void
+}) {
   const end = plusDays(week.start, 6)
+  // days in the first week that fall before the chosen start date
+  const before = (i: number) => plusDays(week.start, i).getTime() < startsOn.getTime()
   return (
     <motion.li
       id={`week-${week.n}`}
@@ -262,9 +289,18 @@ function WeekCard({ week, open, onToggle }: { week: Week; open: boolean; onToggl
             {PHASE_LABEL[week.phase]}
             {week.cutback && ' · พักฟื้น'}
           </span>
-          <span className="week-dates">
-            {fmtDate(week.start)} – {fmtDate(end)}
-          </span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={week.start.getTime()}
+              className="week-dates"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              {fmtDate(week.start)} – {fmtDate(end)}
+            </motion.span>
+          </AnimatePresence>
         </span>
         <span className="week-km">
           {week.km}
@@ -277,7 +313,12 @@ function WeekCard({ week, open, onToggle }: { week: Week; open: boolean; onToggl
 
       <div className="days">
         {week.days.map((d, i) => (
-          <div key={i} className="day" data-tone={KIND_TONE[d.kind]}>
+          <div
+            key={i}
+            className={`day ${before(i) ? 'is-before' : ''}`}
+            data-tone={KIND_TONE[d.kind]}
+            title={before(i) ? 'ก่อนวันเริ่มตาราง' : undefined}
+          >
             <span className="day-name">{DAY[i]}</span>
             <span className="day-kind">{d.kind === 'race' ? KIND_LABEL.race : d.title}</span>
             <span className="day-km">{d.km ? `${d.km}` : '—'}</span>
@@ -297,7 +338,7 @@ function WeekCard({ week, open, onToggle }: { week: Week; open: boolean; onToggl
             <ul>
               {week.days.map((d, i) =>
                 d.kind === 'rest' ? null : (
-                  <li key={i} data-tone={KIND_TONE[d.kind]}>
+                  <li key={i} data-tone={KIND_TONE[d.kind]} className={before(i) ? 'is-before' : undefined}>
                     <span className="wd-day">
                       {DAY[i]} <small>{fmtDate(plusDays(week.start, i))}</small>
                     </span>
