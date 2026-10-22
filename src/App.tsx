@@ -5,7 +5,8 @@ import { Track } from './components/Track'
 import { ZoneTable } from './components/ZoneTable'
 import { Predictions } from './components/Predictions'
 import { PlanBuilder, type PlanSettings } from './components/PlanBuilder'
-import { fmtPace, fmtTime, vdotFrom, zonesFor } from './lib/vdot'
+import { TrophyCase } from './components/TrophyCase'
+import { fmtPace, fmtTime, predictSeconds, vdotFrom, zonesFor } from './lib/vdot'
 import { nextMonday } from './lib/plan'
 
 const STORE = 'pacer:v1'
@@ -66,6 +67,11 @@ export default function App() {
     }
   }, [pb, plan])
 
+  const applyRaceFitness = (v: number) => {
+    setPb(Math.min(MAX_PB, Math.max(MIN_PB, Math.round(predictSeconds(v, 10000)))))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const nudge = (d: number) => setPb((p) => Math.min(MAX_PB, Math.max(MIN_PB, p + d)))
 
   return (
@@ -89,6 +95,9 @@ export default function App() {
           </a>
           <a href="#plan">
             <i>03</i> ตารางซ้อม
+          </a>
+          <a href="#trophies">
+            <i>04</i> ตู้ถ้วย
           </a>
         </nav>
       </header>
@@ -184,6 +193,10 @@ export default function App() {
 
         <Section id="plan" n="03" title="ตารางซ้อมของคุณ" sub="ฐาน → เพิ่มความหนัก → พีค → ลดโหลด มีสัปดาห์พักฟื้นทุก 4 สัปดาห์ แตะสัปดาห์เพื่อดูรายละเอียด">
           <PlanBuilder vdot={vdot} settings={plan} onChange={setPlan} />
+        </Section>
+
+        <Section id="trophies" n="04" title="ตู้ถ้วยรางวัล" sub="บันทึกทุกสนามที่เคยแข่ง ระบบหา PB ของแต่ละระยะให้เอง และกด “ใช้คำนวณเพซ” เพื่อตั้งค่าจากผลแข่งล่าสุดได้">
+          <TrophyCase onUseVdot={applyRaceFitness} />
         </Section>
       </main>
 
