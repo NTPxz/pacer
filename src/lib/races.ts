@@ -1,3 +1,4 @@
+import { exportPhotos } from './photos'
 import { RACE_METERS, vdotFrom, type RaceKey } from './vdot'
 
 export type DistKey = RaceKey | 'other'
@@ -13,6 +14,8 @@ export interface Race {
   bib?: string
   location?: string
   note?: string
+  /** photo ids in IndexedDB (see photos.ts); the first is the cover */
+  photos?: string[]
   /** where the entry came from — 'strava' entries keep their activity id to avoid duplicates on re-import */
   source: 'manual' | 'strava'
   externalId?: string
@@ -95,8 +98,9 @@ export function bestAt(races: Race[], dist: RaceKey): Race | undefined {
   return races.filter((r) => r.dist === dist).sort((a, b) => a.seconds - b.seconds)[0]
 }
 
-export function exportRaces(races: Race[]) {
-  const blob = new Blob([JSON.stringify({ app: 'tayan', version: 1, races }, null, 2)], { type: 'application/json' })
+export async function exportRaces(races: Race[]) {
+  const photos = await exportPhotos(races.flatMap((r) => r.photos ?? []))
+  const blob = new Blob([JSON.stringify({ app: 'tayan', version: 2, races, photos })], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -105,12 +109,15 @@ export function exportRaces(races: Race[]) {
   URL.revokeObjectURL(url)
 }
 
-export function parseImport(text: string): Race[] | null {
+export function parseImport(text: string): { races: Race[]; photos: Record<string, string> } | null {
   try {
     const data = JSON.parse(text)
     const list = Array.isArray(data) ? data : data?.races
     if (!Array.isArray(list)) return null
-    return list.filter(isRace).map((r) => ({ ...r, source: r.source ?? 'manual' }))
+    return {
+      races: list.filter(isRace).map((r) => ({ ...r, source: r.source ?? 'manual' })),
+      photos: data && typeof data.photos === 'object' && !Array.isArray(data.photos) ? data.photos : {},
+    }
   } catch {
     return null
   }

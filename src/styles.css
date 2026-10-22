@@ -1425,6 +1425,7 @@ input[type='date'] {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
+  align-items: start;
   perspective: 900px;
 }
 .bib {
@@ -2048,5 +2049,287 @@ textarea.text-input {
   }
   .days {
     grid-template-columns: repeat(7, 1fr) !important;
+  }
+}
+
+/* ───────── race photos ───────── */
+.photo {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--rule) 55%, transparent);
+  overflow: hidden;
+}
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* polaroid taped onto the bib */
+.bib-photo {
+  position: relative;
+  display: block;
+  margin: 16px 28px 6px;
+  padding: 7px 7px 22px;
+  border: none;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 8px 18px -10px rgb(0 0 0 / 0.4);
+  rotate: var(--tilt, -1deg);
+  transition: rotate 0.4s var(--ease), scale 0.4s var(--ease), box-shadow 0.4s;
+  cursor: zoom-in;
+}
+.bib-photo .photo {
+  aspect-ratio: 4 / 3;
+  height: auto;
+  background: #e9e4da;
+}
+.bib-photo::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 64px;
+  height: 20px;
+  translate: -50% 0;
+  rotate: -3deg;
+  background: rgb(236 226 200 / 0.75);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.08);
+  z-index: 1;
+}
+.bib-photo:hover {
+  rotate: 0deg;
+  scale: 1.03;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.12), 0 16px 30px -12px rgb(0 0 0 / 0.45);
+}
+.bib-photo-count {
+  position: absolute;
+  right: 12px;
+  bottom: 30px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(22 21 19 / 0.78);
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* picker inside the form */
+.photo-picker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.photo-thumb,
+.photo-add-wrap {
+  position: relative;
+  flex: 0 0 84px;
+  height: 84px;
+  border-radius: 10px;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+.photo-thumb.is-busy {
+  background: linear-gradient(100deg, var(--paper-2) 30%, var(--card) 50%, var(--paper-2) 70%) 0 0 / 300% 100%;
+  animation: shine 1.2s linear infinite;
+}
+.photo-add-wrap {
+  cursor: default;
+}
+.photo-add {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1.5px dashed var(--rule);
+  border-radius: 10px;
+  background: none;
+  font-size: 12px;
+  color: var(--mute);
+  transition: border-color 0.2s, color 0.2s;
+}
+.photo-add span {
+  font-size: 24px;
+  line-height: 1;
+}
+.photo-add:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.photo-cover {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11px;
+  font-weight: 600;
+}
+.photo-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgb(22 21 19 / 0.7);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+}
+.primary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  background: rgb(12 11 10 / 0.94);
+  backdrop-filter: blur(8px);
+  color: #f4eee4;
+}
+.lightbox-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 56px 64px 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+.lightbox-frame {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  cursor: grab;
+}
+.lightbox-frame .photo {
+  background: none;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+}
+.lightbox-frame img {
+  width: auto;
+  height: auto;
+  max-width: min(100%, 1400px);
+  max-height: calc(100dvh - 150px);
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7);
+}
+.lightbox-close,
+.lightbox-nav {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid rgb(255 255 255 / 0.25);
+  background: rgb(255 255 255 / 0.06);
+  color: inherit;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.lightbox-close:hover,
+.lightbox-nav:hover {
+  background: rgb(255 255 255 / 0.16);
+}
+.lightbox-close {
+  top: calc(14px + env(safe-area-inset-top));
+  right: 14px;
+  width: 42px;
+  height: 42px;
+  font-size: 24px;
+  line-height: 1;
+}
+.lightbox-nav {
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  translate: 0 -50%;
+  font-size: 18px;
+}
+.lightbox-nav.prev {
+  left: 12px;
+}
+.lightbox-nav.next {
+  right: 12px;
+}
+.lightbox-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px calc(18px + env(safe-area-inset-bottom));
+}
+.lightbox-caption > div:first-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lightbox-caption strong {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lightbox-caption span {
+  font-size: 13px;
+  opacity: 0.7;
+}
+.lightbox-dots {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.lightbox-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.3);
+  transition: width 0.3s var(--ease), background 0.3s;
+}
+.lightbox-dots button.is-active {
+  width: 22px;
+  background: #fff;
+}
+
+@media (max-width: 640px) {
+  .lightbox-stage {
+    padding: 60px 0 0;
+  }
+  .lightbox-frame img {
+    border-radius: 0;
+  }
+  .lightbox-nav {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo-thumb.is-busy {
+    animation: none;
   }
 }

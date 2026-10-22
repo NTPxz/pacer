@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion, Reorder } from 'framer-motion'
+import { addPhoto, deletePhotos, MAX_PHOTOS } from '../lib/photos'
 import { DIST_KM, newId, raceVdot, type DistKey, type Race } from '../lib/races'
 import { fmtPace } from '../lib/vdot'
+import { Photo } from './Photo'
 import { Segmented } from './Segmented'
 
 const today = () => {
@@ -30,7 +32,50 @@ export function RaceForm({
   const [location, setLocation] = useState(initial?.location ?? '')
   const [note, setNote] = useState(initial?.note ?? '')
   const [tried, setTried] = useState(false)
+  const [photos, setPhotos] = useState<string[]>(initial?.photos ?? [])
+  const [busy, setBusy] = useState(0)
+  const [photoError, setPhotoError] = useState('')
   const first = useRef<HTMLInputElement>(null)
+  const pick = useRef<HTMLInputElement>(null)
+  // photos written to IndexedDB during this edit; discarded if the form is cancelled
+  const added = useRef<string[]>([])
+  const saved = useRef(false)
+
+  useEffect(
+    () => () => {
+      if (!saved.current) deletePhotos(added.current).catch(() => {})
+    },
+    [],
+  )
+
+  const onPick = async (files: FileList | null) => {
+    if (!files?.length) return
+    setPhotoError('')
+    const room = MAX_PHOTOS - photos.length
+    const list = [...files].slice(0, room)
+    if (files.length > room) setPhotoError(`ใส่ได้สูงสุด ${MAX_PHOTOS} รูปต่อรายการ`)
+    setBusy((b) => b + list.length)
+    for (const f of list) {
+      try {
+        const id = await addPhoto(f)
+        added.current.push(id)
+        setPhotos((p) => [...p, id])
+      } catch {
+        setPhotoError('เปิดไฟล์รูปนี้ไม่ได้ — ลองใช้ JPG หรือ PNG')
+      } finally {
+        setBusy((b) => b - 1)
+      }
+    }
+  }
+
+  const removePhoto = (id: string) => {
+    setPhotos((p) => p.filter((x) => x !== id))
+    // photos that existed before this edit are only deleted once the edit is saved
+    if (added.current.includes(id)) {
+      added.current = added.current.filter((x) => x !== id)
+      deletePhotos([id]).catch(() => {})
+    }
+  }
 
   useEffect(() => {
     first.current?.focus()
@@ -55,7 +100,10 @@ export function RaceForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     setTried(true)
-    if (!valid) return
+    if (!valid || busy) return
+    saved.current = true
+    const dropped = (initial?.photos ?? []).filter((id) => !photos.includes(id))
+    deletePhotos(dropped).catch(() => {})
     onSave({
       id: initial?.id ?? newId(),
       name: name.trim(),
@@ -66,6 +114,7 @@ export function RaceForm({
       bib: bib.trim() || undefined,
       location: location.trim() || undefined,
       note: note.trim() || undefined,
+      photos: photos.length ? photos : undefined,
       source: initial?.source ?? 'manual',
       externalId: initial?.externalId,
     })
@@ -112,6 +161,58 @@ export function RaceForm({
             aria-invalid={tried && !name.trim()}
           />
         </label>
+
+        <div className="field">
+          <span className="field-label">
+            รูปความทรงจำ <output>{photos.length ? `${photos.length}/${MAX_PHOTOS}` : ''}</output>
+          </span>
+          <Reorder.Group axis="x" values={photos} onReorder={setPhotos} className="photo-picker">
+            <AnimatePresence initial={false}>
+              {photos.map((id, k) => (
+                <Reorder.Item
+                  key={id}
+                  value={id}
+                  className="photo-thumb"
+                  initial={{ opacity: 0, scale: 0.6 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.6 }}
+                  whileDrag={{ scale: 1.08, zIndex: 2 }}
+                >
+                  <Photo id={id} alt={`รูปที่ ${k + 1}`} />
+                  {k === 0 && <span className="photo-cover">ปก</span>}
+                  <button type="button" className="photo-remove" onClick={() => removePhoto(id)} aria-label={`ลบรูปที่ ${k + 1}`}>
+                    ×
+                  </button>
+                </Reorder.Item>
+              ))}
+            </AnimatePresence>
+            {Array.from({ length: busy }, (_, k) => (
+              <li key={`busy-${k}`} className="photo-thumb is-busy" aria-label="กำลังย่อรูป" />
+            ))}
+            {photos.length + busy < MAX_PHOTOS && (
+              <li className="photo-add-wrap">
+                <button type="button" className="photo-add" onClick={() => pick.current?.click()}>
+                  <span aria-hidden>+</span>
+                  เพิ่มรูป
+                </button>
+              </li>
+            )}
+          </Reorder.Group>
+          <input
+            ref={pick}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              onPick(e.target.files)
+              e.target.value = ''
+            }}
+          />
+          <span className="field-hint">
+            {photoError || (photos.length > 1 ? 'ลากเพื่อเรียงลำดับ — รูปแรกคือปกของการ์ด' : 'รูปถูกย่อขนาดและเก็บไว้ในเครื่องนี้เท่านั้น')}
+          </span>
+        </div>
 
         <div className="form-row">
           <label className="field">
@@ -199,8 +300,8 @@ export function RaceForm({
           <button type="button" className="ghost" onClick={onClose}>
             ยกเลิก
           </button>
-          <button type="submit" className="primary">
-            {initial ? 'บันทึกการแก้ไข' : 'เพิ่มเข้าตู้'}
+          <button type="submit" className="primary" disabled={busy > 0}>
+            {busy ? 'กำลังย่อรูป…' : initial ? 'บันทึกการแก้ไข' : 'เพิ่มเข้าตู้'}
           </button>
         </footer>
       </motion.form>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   bestAt,
@@ -14,7 +15,10 @@ import {
   type DistKey,
   type Race,
 } from '../lib/races'
+import { deletePhotos, importPhotos } from '../lib/photos'
 import { fmtPace, fmtTime, RACE_LABEL, type RaceKey } from '../lib/vdot'
+import { Lightbox } from './Lightbox'
+import { Photo } from './Photo'
 import { RaceForm } from './RaceForm'
 
 const MEDALS: RaceKey[] = ['5K', '10K', 'HM', 'M']
@@ -28,6 +32,7 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
   const [editing, setEditing] = useState<Race | 'new' | null>(null)
   const [filter, setFilter] = useState<DistKey | 'all'>('all')
   const [toast, setToast] = useState<{ text: string; pb: boolean } | null>(null)
+  const [viewing, setViewing] = useState<{ race: Race; index: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => saveRaces(races), [races])
@@ -65,6 +70,17 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
   const remove = (r: Race) => {
     if (!window.confirm(`ลบ "${r.name}" ออกจากตู้?`)) return
     setRaces((prev) => prev.filter((x) => x.id !== r.id))
+    deletePhotos(r.photos ?? []).catch(() => {})
+  }
+
+  const backup = async () => {
+    const n = races.reduce((s, r) => s + (r.photos?.length ?? 0), 0)
+    if (n) setToast({ text: `กำลังรวม ${n} รูปเข้าไฟล์สำรอง…`, pb: false })
+    try {
+      await exportRaces(races)
+    } catch {
+      setToast({ text: 'สร้างไฟล์สำรองไม่สำเร็จ', pb: false })
+    }
   }
 
   const onImport = async (file: File) => {
@@ -73,8 +89,13 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
       setToast({ text: 'ไฟล์นี้อ่านไม่ได้ — ต้องเป็นไฟล์ที่ export จาก TAYAN', pb: false })
       return
     }
-    setRaces((prev) => mergeRaces(prev, incoming))
-    setToast({ text: `นำเข้า ${incoming.length} รายการ`, pb: false })
+    try {
+      await importPhotos(incoming.photos)
+    } catch {
+      setToast({ text: 'นำเข้ารูปไม่สำเร็จ — เบราว์เซอร์นี้อาจปิดการเก็บข้อมูลไว้', pb: false })
+    }
+    setRaces((prev) => mergeRaces(prev, incoming.races))
+    setToast({ text: `นำเข้า ${incoming.races.length} รายการ`, pb: false })
   }
 
   return (
@@ -168,7 +189,7 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
         </div>
         <div className="weeks-actions">
           {races.length > 0 && (
-            <button type="button" className="ghost" onClick={() => exportRaces(races)}>
+            <button type="button" className="ghost" onClick={backup}>
               สำรองข้อมูล
             </button>
           )}
@@ -216,6 +237,7 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
                 onEdit={() => setEditing(r)}
                 onRemove={() => remove(r)}
                 onUse={() => onUseVdot(raceVdot(r))}
+                onOpenPhotos={(index) => setViewing({ race: r, index })}
               />
             ))}
           </AnimatePresence>
@@ -226,11 +248,30 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
         ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น — กด “สำรองข้อมูล” เป็นระยะ หรือใช้ไฟล์เดียวกันย้ายไปเครื่องอื่น
       </p>
 
+      {/* overlays go to <body> so no transformed ancestor (layout animations) can trap position: fixed */}
+      {createPortal(
+        <AnimatePresence>
+          {editing && (
+            <RaceForm initial={editing === 'new' ? null : editing} onSave={save} onClose={() => setEditing(null)} />
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
+
+      {createPortal(
       <AnimatePresence>
-        {editing && (
-          <RaceForm initial={editing === 'new' ? null : editing} onSave={save} onClose={() => setEditing(null)} />
+        {viewing && (
+          <Lightbox
+            photos={viewing.race.photos ?? []}
+            start={viewing.index}
+            title={viewing.race.name}
+            sub={`${viewing.race.dist === 'other' ? `${viewing.race.km} กม.` : DIST_SHORT[viewing.race.dist]} · ${fmtTime(viewing.race.seconds)} · ${fmtDate(viewing.race.date)}`}
+            onClose={() => setViewing(null)}
+          />
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+        document.body,
+      )}
 
       <AnimatePresence>
         {toast && (
@@ -257,14 +298,19 @@ function Bib({
   onEdit,
   onRemove,
   onUse,
+  onOpenPhotos,
 }: {
   race: Race
   pb: boolean
   onEdit: () => void
   onRemove: () => void
   onUse: () => void
+  onOpenPhotos: (index: number) => void
 }) {
   const vdotOk = race.km >= 1.5
+  const photos = race.photos ?? []
+  // a stable, slightly different tilt per card so the polaroids don't look stamped out
+  const tilt = ((race.id.charCodeAt(0) + race.id.length) % 5) - 2
   return (
     <motion.article
       layout
@@ -279,8 +325,20 @@ function Bib({
         <span>{race.dist === 'other' ? `${race.km} กม.` : DIST_SHORT[race.dist]}</span>
         <span>{fmtDate(race.date)}</span>
       </div>
+      {photos.length > 0 && (
+        <button
+          type="button"
+          className="bib-photo"
+          style={{ '--tilt': `${tilt * 0.8}deg` } as React.CSSProperties}
+          onClick={() => onOpenPhotos(0)}
+          aria-label={`ดูรูป ${photos.length} รูปจาก ${race.name}`}
+        >
+          <Photo id={photos[0]} alt={race.name} layoutId={`photo-${photos[0]}`} />
+          {photos.length > 1 && <span className="bib-photo-count">+{photos.length - 1}</span>}
+        </button>
+      )}
       <div className="bib-body">
-        <span className="bib-no">{race.bib || '—'}</span>
+        {(race.bib || !photos.length) && <span className="bib-no">{race.bib || '—'}</span>}
         <h3>{race.name}</h3>
         {race.location && <p className="bib-loc">{race.location}</p>}
         <div className="bib-time">
