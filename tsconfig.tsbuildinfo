@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/planbuilder.tsx","./src/components/predictions.tsx","./src/components/roll.tsx","./src/components/segmented.tsx","./src/components/timeinput.tsx","./src/components/track.tsx","./src/components/zonetable.tsx","./src/lib/plan.ts","./src/lib/vdot.ts","./vite.config.ts"],"version":"5.6.3"}
