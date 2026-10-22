@@ -150,6 +150,20 @@ button {
   color: var(--ink);
   text-decoration: none;
 }
+.brand-name {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  letter-spacing: 0.04em;
+}
+.brand-name small {
+  font-family: var(--body);
+  font-stretch: 100%;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--track);
+}
 .brand svg {
   width: 34px;
   height: 20px;

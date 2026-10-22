@@ -2,7 +2,7 @@
 
 <img src="public/favicon.svg" width="64" alt="" />
 
-# pacer
+# TAYAN <sub>ทะยาน</sub>
 
 **ใส่เวลา 10K ที่ดีที่สุด — ได้เพซซ้อมทุกโซนและตารางซ้อมถึงวันแข่ง**
 
@@ -20,7 +20,7 @@ Turn your best 10K time into training paces and a week-by-week plan.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.jpg" />
-  <img src="docs/hero-light.jpg" alt="หน้าแรกของ pacer: ช่องกรอกเวลา 10K และลู่วิ่งจำลองความเร็วของแต่ละโซน" />
+  <img src="docs/hero-light.jpg" alt="หน้าแรกของ TAYAN: ช่องกรอกเวลา 10K และลู่วิ่งจำลองความเร็วของแต่ละโซน" />
 </picture>
 
 </div>
@@ -46,6 +46,9 @@ Turn your best 10K time into training paces and a week-by-week plan.
   </tr>
   <tr>
     <td><img src="docs/plan.jpg" alt="ตัวสร้างตารางซ้อมและกราฟระยะรายสัปดาห์" /></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/trophy.jpg" alt="ตู้ถ้วยรางวัล: การ์ดบิบของแต่ละสนามพร้อมป้าย PB" /></td>
   </tr>
 </table>
 

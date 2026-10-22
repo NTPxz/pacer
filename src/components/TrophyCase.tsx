@@ -70,7 +70,7 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
   const onImport = async (file: File) => {
     const incoming = parseImport(await file.text())
     if (!incoming) {
-      setToast({ text: 'ไฟล์นี้อ่านไม่ได้ — ต้องเป็นไฟล์ที่ export จาก pacer', pb: false })
+      setToast({ text: 'ไฟล์นี้อ่านไม่ได้ — ต้องเป็นไฟล์ที่ export จาก TAYAN', pb: false })
       return
     }
     setRaces((prev) => mergeRaces(prev, incoming))

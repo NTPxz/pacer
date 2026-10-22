@@ -9,6 +9,7 @@ import { TrophyCase } from './components/TrophyCase'
 import { fmtPace, fmtTime, predictSeconds, vdotFrom, zonesFor } from './lib/vdot'
 import { nextMonday } from './lib/plan'
 
+// storage keys keep the old 'pacer' prefix so existing users don't lose their data
 const STORE = 'pacer:v1'
 const MIN_PB = 26 * 60
 const MAX_PB = 105 * 60
@@ -77,14 +78,16 @@ export default function App() {
   return (
     <>
       <header className="topbar">
-        <a href="#top" className="brand" aria-label="Pacer">
+        <a href="#top" className="brand" aria-label="TAYAN ทะยาน">
           <svg viewBox="0 0 40 22" aria-hidden>
             <rect x="1.5" y="1.5" width="37" height="19" rx="9.5" />
             <circle r="3">
               <animateMotion dur="6s" repeatCount="indefinite" path="M 12 20.5 H 28 A 9.5 9.5 0 0 0 28 1.5 H 12 A 9.5 9.5 0 0 0 12 20.5 Z" />
             </circle>
           </svg>
-          pacer
+          <span className="brand-name">
+            TAYAN<small>ทะยาน</small>
+          </span>
         </a>
         <nav>
           <a href="#zones">
@@ -205,7 +208,7 @@ export default function App() {
           คำนวณจากโมเดล VDOT ของ Jack Daniels &amp; Jimmy Gilbert — เป็นแนวทาง ไม่ใช่กฎตายตัว อากาศร้อนชื้นแบบบ้านเรา
           เพซช้าลง 10–20 วิ/กม. ถือว่าปกติ
         </p>
-        <span className="mono-label">pacer · ซ้อมให้ถูกเพซ</span>
+        <span className="mono-label">tayan · ซ้อมให้ถูกเพซ แล้วทะยานไปข้างหน้า</span>
       </footer>
     </>
   )

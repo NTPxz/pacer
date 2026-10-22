@@ -96,11 +96,11 @@ export function bestAt(races: Race[], dist: RaceKey): Race | undefined {
 }
 
 export function exportRaces(races: Race[]) {
-  const blob = new Blob([JSON.stringify({ app: 'pacer', version: 1, races }, null, 2)], { type: 'application/json' })
+  const blob = new Blob([JSON.stringify({ app: 'tayan', version: 1, races }, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `pacer-trophies-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `tayan-trophies-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
