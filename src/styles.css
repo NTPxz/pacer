@@ -1850,6 +1850,21 @@ textarea.text-input {
   }
 }
 
+.summary-target dd {
+  color: var(--track);
+}
+.summary-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--mute);
+  margin-top: 2px;
+}
+.ambition-hint {
+  margin-top: -14px;
+}
+.ambition-hint b {
+  color: var(--ink);
+}
 .day.is-before,
 .week-detail li.is-before {
   opacity: 0.35;

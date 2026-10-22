@@ -1,7 +1,19 @@
 import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useInView } from 'framer-motion'
-import { buildPlan, KIND_LABEL, mondayOf, PHASE_LABEL, suggestedStartKm, type Kind, type Phase, type Week } from '../lib/plan'
-import { RACE_LABEL, type RaceKey } from '../lib/vdot'
+import {
+  buildPlan,
+  KIND_LABEL,
+  mondayOf,
+  PHASE_LABEL,
+  suggestedStartKm,
+  targetVdot,
+  type Ambition,
+  type Kind,
+  type Phase,
+  type Week,
+} from '../lib/plan'
+import { fmtPace, fmtTime, predictSeconds, RACE_LABEL, RACE_METERS, type RaceKey } from '../lib/vdot'
+import { Roll } from './Roll'
 import { Segmented } from './Segmented'
 
 export interface PlanSettings {
@@ -10,6 +22,8 @@ export interface PlanSettings {
   days: 3 | 4 | 5 | 6
   startKm: number | null
   startDate: string
+  /** how much faster the race-day target is than current fitness */
+  ambition?: Ambition
 }
 
 const DAY = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.']
@@ -58,17 +72,24 @@ export function PlanBuilder({
   const planMonday = mondayOf(chosenStart)
   const offWeekStart = chosenStart.getTime() !== planMonday.getTime()
 
+  const ambition = settings.ambition ?? 'normal'
+  const goalVdot = targetVdot(vdot, settings.weeks, ambition)
+  const goalMeters = RACE_METERS[settings.goal]
+  const targetTime = predictSeconds(goalVdot, goalMeters)
+  const nowTime = predictSeconds(vdot, goalMeters)
+
   const plan = useMemo(
     () =>
       buildPlan({
         vdot,
+        targetVdot: goalVdot,
         goal: settings.goal,
         weeks: settings.weeks,
         daysPerWeek: settings.days,
         startKm,
         startDate: parseDate(settings.startDate),
       }),
-    [vdot, settings.goal, settings.weeks, settings.days, settings.startDate, startKm],
+    [vdot, goalVdot, settings.goal, settings.weeks, settings.days, settings.startDate, startKm],
   )
 
   const [open, setOpen] = useState<Set<number>>(() => new Set([1]))
@@ -126,6 +147,21 @@ export function PlanBuilder({
             style={{ '--fill': `${((settings.weeks - 8) / 12) * 100}%` } as React.CSSProperties}
           />
         </div>
+        <Segmented
+          id="ambition"
+          label="เป้าหมาย"
+          value={ambition}
+          onChange={(a) => set({ ambition: a })}
+          options={[
+            { value: 'easy', label: 'ชิล ๆ' },
+            { value: 'normal', label: 'ปกติ' },
+            { value: 'hard', label: 'ท้าทาย' },
+          ]}
+        />
+        <span className="field-hint ambition-hint">
+          คาดว่า VDOT จะขึ้นจาก {vdot.toFixed(1)} เป็น <b>{goalVdot.toFixed(1)}</b> เมื่อซ้อมครบ — เพซซ้อมจะค่อย ๆ
+          เร็วขึ้นทีละช่วง ถ้าเซ็ตไหนหนักเกินไป ให้กลับไปใช้เพซของช่วงก่อนหน้า
+        </span>
         <div className="field">
           <span className="field-label">
             ระยะสัปดาห์แรก <output>{startKm} กม.</output>
@@ -171,6 +207,15 @@ export function PlanBuilder({
             <dt>วันแข่ง {RACE_LABEL[settings.goal]}</dt>
             <dd>{raceDay.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short' })}</dd>
           </div>
+          <div className="summary-target">
+            <dt>เป้าเวลาวันแข่ง</dt>
+            <dd>
+              <Roll value={fmtTime(targetTime)} />
+            </dd>
+            <span className="summary-sub">
+              {fmtPace(targetTime / (goalMeters / 1000))}/กม. · เร็วกว่าตอนนี้ {fmtTime(Math.round(nowTime) - Math.round(targetTime))}
+            </span>
+          </div>
           <div>
             <dt>ระยะรวม</dt>
             <dd>
@@ -178,15 +223,9 @@ export function PlanBuilder({
             </dd>
           </div>
           <div>
-            <dt>สัปดาห์พีค</dt>
+            <dt>สัปดาห์พีค · ลองรันยาวสุด</dt>
             <dd>
-              {peak} <small>กม.</small>
-            </dd>
-          </div>
-          <div>
-            <dt>ลองรันยาวสุด</dt>
-            <dd>
-              {longest} <small>กม.</small>
+              {peak} <small>·</small> {longest} <small>กม.</small>
             </dd>
           </div>
         </dl>
@@ -298,7 +337,7 @@ function WeekCard({
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
             >
-              {fmtDate(week.start)} – {fmtDate(end)}
+              {fmtDate(week.start)} – {fmtDate(end)} · VDOT {week.vdot.toFixed(1)}
             </motion.span>
           </AnimatePresence>
         </span>

@@ -39,10 +39,16 @@ export interface Week {
   km: number
   start: Date
   days: Workout[]
+  /** fitness the week's paces are based on */
+  vdot: number
 }
+
+export type Ambition = 'easy' | 'normal' | 'hard'
 
 export interface PlanInput {
   vdot: number
+  /** fitness expected on race day — see targetVdot() */
+  targetVdot: number
   goal: RaceKey
   weeks: number
   daysPerWeek: 3 | 4 | 5 | 6
@@ -87,6 +93,20 @@ const PEAK_GROWTH: Record<RaceKey, number> = { '5K': 1.3, '10K': 1.35, HM: 1.42,
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 const half = (v: number) => Math.round(v * 2) / 2
 
+const AMBITION: Record<Ambition, number> = { easy: 0.5, normal: 1, hard: 1.5 }
+
+/**
+ * Fitness expected after the block. Daniels' rule of thumb: newer runners gain about
+ * one VDOT point per 4–6 weeks of consistent training, fitter runners progressively less.
+ */
+export function targetVdot(vdot: number, weeks: number, ambition: Ambition): number {
+  const per4 = vdot < 40 ? 1 : vdot < 50 ? 0.8 : vdot < 60 ? 0.6 : 0.4
+  return vdot + Math.min(5, Math.min(4, (weeks / 4) * per4) * AMBITION[ambition])
+}
+
+// share of the expected gain that each phase trains at; paces step up only as the block progresses
+const PHASE_GAIN: Record<Phase, number> = { base: 0, build: 0.35, peak: 0.7, taper: 1 }
+
 export function suggestedStartKm(vdot: number, days: number, goal: RaceKey): number {
   const goalBonus = goal === 'M' ? 10 : goal === 'HM' ? 5 : 0
   return Math.round(clamp(days * 6 + (vdot - 35) * 0.6 + goalBonus, 15, 90))
@@ -124,7 +144,10 @@ export { nextMonday }
 
 export function buildPlan(input: PlanInput): Week[] {
   const { vdot, goal, weeks, daysPerWeek, startKm } = input
-  const z = Object.fromEntries(zonesFor(vdot).map((x) => [x.key, x])) as Record<ZoneKey, Zone>
+  const goalVdot = input.targetVdot
+  const zoneMap = (v: number) => Object.fromEntries(zonesFor(v).map((x) => [x.key, x])) as Record<ZoneKey, Zone>
+  // reassigned per week; the session builders below read it through p() / per()
+  let z = zoneMap(vdot)
   const p = (k: ZoneKey) => `${fmtPace(z[k].fast)}–${fmtPace(z[k].slow)}/กม.`
   const per = (k: ZoneKey, m: number) => fmtPace((zoneMid(z[k]) * m) / 1000)
 
@@ -301,6 +324,8 @@ export function buildPlan(input: PlanInput): Week[] {
 
     const len = phaseLen(phase)
     const prog = len > 1 ? wip / (len - 1) : 1
+    const weekVdot = vdot + (goalVdot - vdot) * PHASE_GAIN[phase]
+    z = zoneMap(weekVdot)
     const layout = LAYOUT[daysPerWeek]
     const days: Workout[] = []
 
@@ -308,11 +333,13 @@ export function buildPlan(input: PlanInput): Week[] {
       for (let d = 0; d < 7; d++) {
         const slot = layout[d]
         if (isLast && d === 6) {
-          const t = predictSeconds(vdot, RACE_METERS[goal])
+          const t = predictSeconds(goalVdot, RACE_METERS[goal])
+          const now = predictSeconds(vdot, RACE_METERS[goal])
+          const faster = Math.round(now) - Math.round(t)
           days.push({
             kind: 'race',
             title: `${KIND_LABEL.race} ${RACE_LABEL[goal]}`,
-            detail: `เป้าเวลา ${fmtTime(t)} (เพซเฉลี่ย ${fmtPace(t / (RACE_METERS[goal] / 1000))}/กม.) ออกตัวช้ากว่าเป้าเล็กน้อย แล้วค่อยไล่`,
+            detail: `เป้าเวลา ${fmtTime(t)} (เพซเฉลี่ย ${fmtPace(t / (RACE_METERS[goal] / 1000))}/กม.)${faster > 0 ? ` เร็วกว่าความฟิตตอนเริ่มตาราง ${fmtTime(faster)}` : ''} — ออกตัวช้ากว่าเป้าเล็กน้อย แล้วค่อยไล่`,
             km: Math.round((RACE_METERS[goal] / 1000) * 10) / 10,
           })
         } else if (isLast && d === 5) {
@@ -359,6 +386,7 @@ export function buildPlan(input: PlanInput): Week[] {
       km: Math.round(days.reduce((s, d) => s + d.km, 0)),
       start,
       days,
+      vdot: weekVdot,
     })
   }
   return result
