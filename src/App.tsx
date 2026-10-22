@@ -6,6 +6,7 @@ import { ZoneTable } from './components/ZoneTable'
 import { Predictions } from './components/Predictions'
 import { PlanBuilder, type PlanSettings } from './components/PlanBuilder'
 import { TrophyCase } from './components/TrophyCase'
+import { Donate } from './components/Donate'
 import { fmtPace, fmtTime, predictSeconds, RACE_LABEL, RACE_METERS, vdotFrom, zonesFor, type RaceKey } from './lib/vdot'
 import { DIST_SHORT, type Race } from './lib/races'
 import { nextMonday } from './lib/plan'
@@ -272,6 +273,15 @@ export default function App() {
 
         <Section id="trophies" n="04" title="ตู้ถ้วยรางวัล" sub="บันทึกทุกสนามที่เคยแข่ง ระบบหา PB ของแต่ละระยะให้เอง และกด “ใช้คำนวณเพซ” เพื่อตั้งค่าจากผลแข่งล่าสุดได้">
           <TrophyCase onUseVdot={applyRaceFitness} />
+        </Section>
+
+        <Section
+          id="donate"
+          n="05"
+          title="จุดให้น้ำ"
+          sub="TAYAN ใช้ฟรี ไม่มีโฆษณา ไม่เก็บข้อมูลของคุณ ถ้าช่วยให้ซ้อมได้ดีขึ้น แวะเติมน้ำให้คนทำสักแก้วก็ได้"
+        >
+          <Donate />
         </Section>
       </main>
 

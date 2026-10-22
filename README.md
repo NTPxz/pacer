@@ -155,6 +155,21 @@ src/
 
 **Stack:** React 18 · TypeScript · Vite · Framer Motion — ไม่ใช้ UI kit หรือ CSS framework
 
+## ช่องทางสนับสนุน
+
+ส่วน **จุดให้น้ำ** ท้ายหน้าเว็บอ่านค่าจาก `src/config/donate.ts` กรอกเฉพาะช่องที่ใช้ ช่องที่ว่างจะไม่แสดง
+
+```ts
+export const DONATE: DonateConfig = {
+  promptpay: '0812345678',            // เบอร์ 10 หลัก หรือเลขบัตร/เลขผู้เสียภาษี 13 หลัก → สร้าง QR พร้อมเพย์ให้อัตโนมัติ
+  promptpayName: 'ชื่อ นามสกุล',
+  bank: { bank: 'กสิกรไทย', name: 'ชื่อ นามสกุล', number: '000-0-00000-0' },
+  links: [{ label: 'Buy Me a Coffee', url: 'https://buymeacoffee.com/…' }],
+}
+```
+
+QR พร้อมเพย์สร้างในเบราว์เซอร์ตามมาตรฐาน EMVCo/Thai QR (ทดสอบเทียบกับไลบรารี `promptpay-qr` แล้ว) เลือกจำนวนเงินได้ และบันทึกเป็นรูปได้
+
 ## ร่วมพัฒนา
 
 ยินดีรับ issue และ pull request ทุกขนาด ไม่ว่าจะเป็นแก้คำผิด ปรับสูตร หรือเพิ่มฟีเจอร์
