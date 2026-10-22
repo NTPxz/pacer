@@ -2,6 +2,22 @@
   "name": "pacer",
   "private": true,
   "version": "1.0.0",
+  "description": "คำนวณเพซซ้อมวิ่งและสร้างตารางซ้อมจากเวลา 10K ที่ดีที่สุด — VDOT pace calculator & training plan builder",
+  "license": "MIT",
+  "author": "Nuthipong",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NTPxz/pacer.git"
+  },
+  "homepage": "https://ntpxz.github.io/pacer/",
+  "keywords": [
+    "running",
+    "pace",
+    "vdot",
+    "training-plan",
+    "marathon",
+    "10k"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
