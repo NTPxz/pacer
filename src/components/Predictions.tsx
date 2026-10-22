@@ -5,7 +5,7 @@ import { Roll } from './Roll'
 const KEYS: RaceKey[] = ['5K', '10K', 'HM', 'M']
 const BIG: Record<RaceKey, string> = { '5K': '5K', '10K': '10K', HM: '21K', M: '42K' }
 
-export function Predictions({ vdot }: { vdot: number }) {
+export function Predictions({ vdot, yours }: { vdot: number; yours: RaceKey }) {
   return (
     <div className="races">
       {KEYS.map((k, i) => {
@@ -13,7 +13,7 @@ export function Predictions({ vdot }: { vdot: number }) {
         return (
           <motion.div
             key={k}
-            className={`race ${k === '10K' ? 'is-yours' : ''}`}
+            className={`race ${k === yours ? 'is-yours' : ''}`}
             initial={{ opacity: 0, y: 32 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
@@ -24,7 +24,7 @@ export function Predictions({ vdot }: { vdot: number }) {
             </span>
             <span className="race-label">
               {RACE_LABEL[k]}
-              {k === '10K' && <b>PB ของคุณ</b>}
+              {k === yours && <b>PB ของคุณ</b>}
             </span>
             <Roll value={fmtTime(t)} className="race-time" />
             <span className="race-pace">

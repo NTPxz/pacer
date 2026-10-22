@@ -28,7 +28,7 @@ const fmtDate = (iso: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric
   return new Date(y, m - 1, d).toLocaleDateString('th-TH', opts)
 }
 
-export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void }) {
+export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number, race: Race) => void }) {
   const [races, setRaces] = useState<Race[]>(loadRaces)
   const [editing, setEditing] = useState<Race | 'new' | null>(null)
   const [filter, setFilter] = useState<DistKey | 'all'>('all')
@@ -247,7 +247,7 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
                 pb={pbs.has(r.id)}
                 onEdit={() => setEditing(r)}
                 onRemove={() => remove(r)}
-                onUse={() => onUseVdot(raceVdot(r))}
+                onUse={() => onUseVdot(raceVdot(r), r)}
                 onOpenPhotos={(index) => setViewing({ race: r, index })}
               />
             ))}

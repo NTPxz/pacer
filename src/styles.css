@@ -222,8 +222,48 @@ button {
   max-width: 1320px;
   margin: 0 auto;
 }
+.hero-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 8px;
+}
+.dist-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+}
+.dist-tabs button {
+  position: relative;
+  border: none;
+  background: none;
+  padding: 5px 14px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 15px;
+  color: var(--mute);
+  transition: color 0.25s;
+}
+.dist-tabs button:hover {
+  color: var(--ink);
+}
+.dist-tabs button.is-active {
+  color: var(--chalk);
+}
+.dist-tabs button > span:last-child {
+  position: relative;
+}
+.dist-tab-thumb {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--track);
+}
 .eyebrow {
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 15px;
   color: var(--ink-2);
   display: flex;

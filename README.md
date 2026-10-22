@@ -4,9 +4,9 @@
 
 # TAYAN <sub>ทะยาน</sub>
 
-**ใส่เวลา 10K ที่ดีที่สุด — ได้เพซซ้อมทุกโซนและตารางซ้อมถึงวันแข่ง**
+**ใส่เวลาที่ดีที่สุดของ 5K · 10K · ฮาล์ฟ · มาราธอน — ได้เพซซ้อมทุกโซนและตารางซ้อมถึงวันแข่ง**
 
-Turn your best 10K time into training paces and a week-by-week plan.
+Turn your best 5K, 10K, half or marathon time into training paces and a week-by-week plan.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-c2462a?style=flat-square)](LICENSE)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/NTPxz/pacer/pages.yml?branch=main&style=flat-square&label=deploy)](https://github.com/NTPxz/pacer/actions/workflows/pages.yml)
@@ -20,7 +20,7 @@ Turn your best 10K time into training paces and a week-by-week plan.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/hero-dark.jpg" />
-  <img src="docs/hero-light.jpg" alt="หน้าแรกของ TAYAN: ช่องกรอกเวลา 10K และลู่วิ่งจำลองความเร็วของแต่ละโซน" />
+  <img src="docs/hero-light.jpg" alt="หน้าแรกของ TAYAN: ช่องกรอกเวลาแข่ง และลู่วิ่งจำลองความเร็วของแต่ละโซน" />
 </picture>
 
 </div>
@@ -32,6 +32,7 @@ Turn your best 10K time into training paces and a week-by-week plan.
 | | |
 |---|---|
 | **โซนเพซ 5 ระดับ** | Easy · Marathon · Threshold · Interval · Repetition พร้อมเวลาต่อ 400 ม. และ กม./ชม. |
+| **คำนวณจากระยะไหนก็ได้** | เลือกระยะ 5K / 10K / 21K / 42K แล้วใส่เวลา สลับระยะได้ทันทีโดยความฟิตเท่าเดิม |
 | **คาดการณ์เวลาแข่ง** | 5K, 10K, ฮาล์ฟมาราธอน, มาราธอน จากความฟิตปัจจุบัน |
 | **ตารางซ้อมอัตโนมัติ** | 8–20 สัปดาห์ · เป้า 5K–42K · วิ่ง 3–6 วัน/สัปดาห์ · ทุกวันมีเซ็ต ระยะ และเพซกำกับ |
 | **ตู้ถ้วยรางวัล** | บันทึกสนามที่เคยแข่ง (ชื่อ วันที่ ระยะ เวลา เลขบิบ สถานที่ โน้ต) พร้อมรูปความทรงจำสูงสุด 8 รูป/รายการ เลือกใส่ stat ติดรูปได้ 3 แบบ (โปสเตอร์ · สติกเกอร์ · เส้นบาง) แล้วบันทึกหรือแชร์ไป IG/LINE ได้ทันที หา PB ของแต่ละระยะให้อัตโนมัติ กราฟพัฒนาการ VDOT และกดใช้ผลแข่งไหนเป็นฐานคำนวณเพซก็ได้ · สำรอง/นำเข้าเป็นไฟล์ JSON |
@@ -145,7 +146,7 @@ src/
 2. แก้ไข และตรวจว่า `npm run build` ผ่าน
 3. เปิด pull request พร้อมอธิบายสั้น ๆ ว่าเปลี่ยนอะไร (มีภาพหน้าจอได้ยิ่งดี)
 
-ไอเดียที่อยากได้: เชื่อม Strava · หน่วยไมล์ · export ไป Google Calendar (.ics) · ปรับเพซตามอุณหภูมิ/ความชื้น · ใส่ผลแข่งระยะอื่นนอกจาก 10K · ภาษาอังกฤษ
+ไอเดียที่อยากได้: เชื่อม Strava · หน่วยไมล์ · export ไป Google Calendar (.ics) · ปรับเพซตามอุณหภูมิ/ความชื้น · ภาษาอังกฤษ
 
 ## หมายเหตุ
 
