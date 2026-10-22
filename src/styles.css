@@ -2333,3 +2333,134 @@ textarea.text-input {
     animation: none;
   }
 }
+
+/* ───────── stat overlays ───────── */
+.photo-thumb.is-selected {
+  outline: 3px solid var(--track);
+  outline-offset: 2px;
+}
+.photo-picker {
+  padding: 5px 5px 6px;
+  margin: -5px -5px 0;
+}
+.photo-stat-flag {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--track);
+  color: var(--chalk);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+}
+.stat-editor {
+  overflow: hidden;
+}
+.stat-editor-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--paper-2);
+}
+.stat-preview {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  max-height: 340px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1b1a17;
+}
+.stat-preview .photo {
+  background: none;
+  width: 100%;
+  height: auto;
+}
+.stat-preview img {
+  width: 100%;
+  height: auto;
+  max-height: 340px;
+  object-fit: contain;
+}
+.stat-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.stat-controls .segmented button {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 600;
+}
+.stat-controls .link {
+  align-self: flex-start;
+  font-size: 13px;
+}
+.corner-pick {
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  gap: 6px;
+}
+.corner-pick button {
+  height: 40px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 18px;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.corner-pick button.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.lightbox-caption {
+  flex-wrap: wrap;
+}
+.lightbox-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.lightbox-actions button {
+  border: 1px solid rgb(255 255 255 / 0.3);
+  background: none;
+  color: inherit;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.lightbox-actions button:hover {
+  background: rgb(255 255 255 / 0.12);
+}
+.lightbox-actions .is-primary {
+  background: #f4eee4;
+  color: #161513;
+  border-color: #f4eee4;
+}
+.lightbox-actions .is-primary:hover {
+  background: #fff;
+}
+.lightbox-actions button:disabled {
+  opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+  .stat-editor-inner {
+    grid-template-columns: 1fr;
+  }
+  .lightbox-dots {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,21 +1,39 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, type PanInfo } from 'framer-motion'
+import { canShareFiles, saveOrShare, type Overlay, type PhotoStats } from '../lib/overlay'
 import { Photo } from './Photo'
 
 export function Lightbox({
   photos,
+  overlays,
+  stats,
   start,
   title,
   sub,
   onClose,
 }: {
   photos: string[]
+  overlays?: Record<string, Overlay>
+  stats: PhotoStats
   start: number
   title: string
   sub: string
   onClose: () => void
 }) {
   const [[i, dir], setPage] = useState<[number, number]>([start, 0])
+  const [saving, setSaving] = useState(false)
+  const shareable = canShareFiles()
+  const exportPhoto = async (share: boolean) => {
+    setSaving(true)
+    try {
+      const slug = title.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').slice(0, 40) || 'race'
+      await saveOrShare(photos[i], overlays?.[photos[i]], stats, `tayan-${slug}-${i + 1}.jpg`, share)
+    } catch {
+      /* user cancelled the share sheet */
+    } finally {
+      setSaving(false)
+    }
+  }
   const go = (d: number) => setPage(([cur]) => [(cur + d + photos.length) % photos.length, d])
 
   useEffect(() => {
@@ -75,7 +93,13 @@ export function Lightbox({
             dragElastic={0.6}
             onDragEnd={onDragEnd}
           >
-            <Photo id={photos[i]} alt={`${title} รูปที่ ${i + 1}`} layoutId={dir === 0 ? `photo-${photos[i]}` : undefined} />
+            <Photo
+              id={photos[i]}
+              alt={`${title} รูปที่ ${i + 1}`}
+              layoutId={dir === 0 ? `photo-${photos[i]}` : undefined}
+              overlay={overlays?.[photos[i]]}
+              stats={stats}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -95,6 +119,16 @@ export function Lightbox({
         <div>
           <strong>{title}</strong>
           <span>{sub}</span>
+        </div>
+        <div className="lightbox-actions">
+          <button type="button" onClick={() => exportPhoto(false)} disabled={saving}>
+            {saving ? 'กำลังเตรียม…' : 'บันทึกรูป'}
+          </button>
+          {shareable && (
+            <button type="button" className="is-primary" onClick={() => exportPhoto(true)} disabled={saving}>
+              แชร์
+            </button>
+          )}
         </div>
         {photos.length > 1 && (
           <div className="lightbox-dots" role="tablist">

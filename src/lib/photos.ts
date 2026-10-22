@@ -76,7 +76,7 @@ export async function deletePhotos(ids: string[]) {
   await tx('readwrite', (s) => ids.forEach((id) => s.delete(id)))
 }
 
-async function getBlob(id: string): Promise<Blob | undefined> {
+export async function getBlob(id: string): Promise<Blob | undefined> {
   const row = (await tx<PhotoRow>('readonly', (s) => s.get(id) as IDBRequest<PhotoRow>)) as PhotoRow | undefined
   return row?.blob
 }

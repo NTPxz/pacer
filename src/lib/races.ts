@@ -1,3 +1,4 @@
+import type { Overlay } from './overlay'
 import { exportPhotos } from './photos'
 import { RACE_METERS, vdotFrom, type RaceKey } from './vdot'
 
@@ -16,6 +17,8 @@ export interface Race {
   note?: string
   /** photo ids in IndexedDB (see photos.ts); the first is the cover */
   photos?: string[]
+  /** per-photo stat overlay; a photo without an entry is shown as-is */
+  photoMeta?: Record<string, Overlay>
   /** where the entry came from — 'strava' entries keep their activity id to avoid duplicates on re-import */
   source: 'manual' | 'strava'
   externalId?: string

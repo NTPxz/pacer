@@ -15,6 +15,7 @@ import {
   type DistKey,
   type Race,
 } from '../lib/races'
+import { statsFor } from '../lib/overlay'
 import { deletePhotos, importPhotos } from '../lib/photos'
 import { fmtPace, fmtTime, RACE_LABEL, type RaceKey } from '../lib/vdot'
 import { Lightbox } from './Lightbox'
@@ -66,6 +67,16 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
       setToast({ text: 'บันทึกแล้ว', pb: false })
     }
   }
+
+  // would this result be the fastest at its distance, ignoring the entry itself?
+  const isPb = (c: Pick<Race, 'id' | 'dist' | 'km' | 'seconds'>) =>
+    c.seconds > 0 &&
+    races.every(
+      (x) =>
+        x.id === c.id ||
+        (c.dist === 'other' ? !(x.dist === 'other' && x.km === c.km) : x.dist !== c.dist) ||
+        x.seconds >= c.seconds,
+    )
 
   const remove = (r: Race) => {
     if (!window.confirm(`ลบ "${r.name}" ออกจากตู้?`)) return
@@ -252,7 +263,12 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
       {createPortal(
         <AnimatePresence>
           {editing && (
-            <RaceForm initial={editing === 'new' ? null : editing} onSave={save} onClose={() => setEditing(null)} />
+            <RaceForm
+              initial={editing === 'new' ? null : editing}
+              isPb={isPb}
+              onSave={save}
+              onClose={() => setEditing(null)}
+            />
           )}
         </AnimatePresence>,
         document.body,
@@ -263,6 +279,8 @@ export function TrophyCase({ onUseVdot }: { onUseVdot: (vdot: number) => void })
         {viewing && (
           <Lightbox
             photos={viewing.race.photos ?? []}
+            overlays={viewing.race.photoMeta}
+            stats={statsFor(viewing.race, pbs.has(viewing.race.id))}
             start={viewing.index}
             title={viewing.race.name}
             sub={`${viewing.race.dist === 'other' ? `${viewing.race.km} กม.` : DIST_SHORT[viewing.race.dist]} · ${fmtTime(viewing.race.seconds)} · ${fmtDate(viewing.race.date)}`}
@@ -333,7 +351,14 @@ function Bib({
           onClick={() => onOpenPhotos(0)}
           aria-label={`ดูรูป ${photos.length} รูปจาก ${race.name}`}
         >
-          <Photo id={photos[0]} alt={race.name} layoutId={`photo-${photos[0]}`} />
+          <Photo
+            id={photos[0]}
+            alt={race.name}
+            layoutId={`photo-${photos[0]}`}
+            overlay={race.photoMeta?.[photos[0]]}
+            stats={statsFor(race, pb)}
+            natural
+          />
           {photos.length > 1 && <span className="bib-photo-count">+{photos.length - 1}</span>}
         </button>
       )}

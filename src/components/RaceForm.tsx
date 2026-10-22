@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, Reorder } from 'framer-motion'
+import { statsFor, type Corner, type Overlay, type OverlayStyle } from '../lib/overlay'
 import { addPhoto, deletePhotos, MAX_PHOTOS } from '../lib/photos'
 import { DIST_KM, newId, raceVdot, type DistKey, type Race } from '../lib/races'
 import { fmtPace } from '../lib/vdot'
@@ -11,12 +12,21 @@ const today = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const CORNERS: { value: Corner; label: string }[] = [
+  { value: 'tl', label: '↖' },
+  { value: 'tr', label: '↗' },
+  { value: 'bl', label: '↙' },
+  { value: 'br', label: '↘' },
+]
+
 export function RaceForm({
   initial,
+  isPb,
   onSave,
   onClose,
 }: {
   initial: Race | null
+  isPb: (r: Pick<Race, 'id' | 'dist' | 'km' | 'seconds'>) => boolean
   onSave: (r: Race) => void
   onClose: () => void
 }) {
@@ -35,6 +45,8 @@ export function RaceForm({
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? [])
   const [busy, setBusy] = useState(0)
   const [photoError, setPhotoError] = useState('')
+  const [meta, setMeta] = useState<Record<string, Overlay>>(initial?.photoMeta ?? {})
+  const [sel, setSel] = useState<string | null>(null)
   const first = useRef<HTMLInputElement>(null)
   const pick = useRef<HTMLInputElement>(null)
   // photos written to IndexedDB during this edit; discarded if the form is cancelled
@@ -70,6 +82,7 @@ export function RaceForm({
 
   const removePhoto = (id: string) => {
     setPhotos((p) => p.filter((x) => x !== id))
+    if (sel === id) setSel(null)
     // photos that existed before this edit are only deleted once the edit is saved
     if (added.current.includes(id)) {
       added.current = added.current.filter((x) => x !== id)
@@ -97,6 +110,35 @@ export function RaceForm({
   const pace = kmOk && timeOk ? seconds / distKm : null
   const vdot = kmOk && timeOk && distKm >= 1.5 ? raceVdot({ km: distKm, seconds }) : null
 
+  // overlay preview follows the form, debounced so typing doesn't re-render the canvas on every key
+  const draft = {
+    id: initial?.id ?? '',
+    name: name.trim(),
+    date,
+    dist,
+    km: kmOk ? Math.round(distKm * 1000) / 1000 : 0,
+    seconds: timeOk ? seconds : 0,
+  }
+  const liveStats = statsFor(draft, kmOk && timeOk && isPb(draft))
+  const liveKey = JSON.stringify(liveStats)
+  const [previewStats, setPreviewStats] = useState(liveStats)
+  useEffect(() => {
+    const t = setTimeout(() => setPreviewStats(JSON.parse(liveKey)), 250)
+    return () => clearTimeout(t)
+  }, [liveKey])
+
+  const setStyle = (id: string, style: OverlayStyle | 'none') =>
+    setMeta((m) => {
+      const next = { ...m }
+      if (style === 'none') delete next[id]
+      else next[id] = { corner: 'bl', tone: 'light', ...m[id], style }
+      return next
+    })
+  const patchOverlay = (id: string, patch: Partial<Overlay>) =>
+    setMeta((m) => (m[id] ? { ...m, [id]: { ...m[id], ...patch } } : m))
+  const applyToAll = (id: string) =>
+    setMeta((m) => (m[id] ? Object.fromEntries(photos.map((p) => [p, { ...m[id] }])) : m))
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     setTried(true)
@@ -115,6 +157,10 @@ export function RaceForm({
       location: location.trim() || undefined,
       note: note.trim() || undefined,
       photos: photos.length ? photos : undefined,
+      photoMeta: (() => {
+        const kept = Object.fromEntries(Object.entries(meta).filter(([id]) => photos.includes(id)))
+        return Object.keys(kept).length ? kept : undefined
+      })(),
       source: initial?.source ?? 'manual',
       externalId: initial?.externalId,
     })
@@ -172,7 +218,8 @@ export function RaceForm({
                 <Reorder.Item
                   key={id}
                   value={id}
-                  className="photo-thumb"
+                  className={`photo-thumb ${sel === id ? 'is-selected' : ''}`}
+                  onClick={() => setSel(sel === id ? null : id)}
                   initial={{ opacity: 0, scale: 0.6 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.6 }}
@@ -180,7 +227,14 @@ export function RaceForm({
                 >
                   <Photo id={id} alt={`รูปที่ ${k + 1}`} />
                   {k === 0 && <span className="photo-cover">ปก</span>}
-                  <button type="button" className="photo-remove" onClick={() => removePhoto(id)} aria-label={`ลบรูปที่ ${k + 1}`}>
+                  {meta[id] && <span className="photo-stat-flag">STAT</span>}
+                  <button
+                    type="button"
+                    className="photo-remove"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      removePhoto(id)
+                    }} aria-label={`ลบรูปที่ ${k + 1}`}>
                     ×
                   </button>
                 </Reorder.Item>
@@ -210,8 +264,80 @@ export function RaceForm({
             }}
           />
           <span className="field-hint">
-            {photoError || (photos.length > 1 ? 'ลากเพื่อเรียงลำดับ — รูปแรกคือปกของการ์ด' : 'รูปถูกย่อขนาดและเก็บไว้ในเครื่องนี้เท่านั้น')}
+            {photoError ||
+              (photos.length
+                ? 'แตะรูปเพื่อใส่ stat · ลากเพื่อเรียงลำดับ — รูปแรกคือปกของการ์ด'
+                : 'รูปถูกย่อขนาดและเก็บไว้ในเครื่องนี้เท่านั้น')}
           </span>
+
+          <AnimatePresence initial={false}>
+            {sel && photos.includes(sel) && (
+              <motion.div
+                key="editor"
+                className="stat-editor"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <div className="stat-editor-inner">
+                  <div className="stat-preview">
+                    <Photo id={sel} alt="ตัวอย่างรูปพร้อม stat" overlay={meta[sel]} stats={previewStats} maxEdge={1000} />
+                  </div>
+                  <div className="stat-controls">
+                    <Segmented
+                      id="ov-style"
+                      label="ใส่ stat บนรูปนี้"
+                      value={meta[sel]?.style ?? 'none'}
+                      onChange={(v) => setStyle(sel, v)}
+                      options={[
+                        { value: 'none', label: 'ไม่ใส่' },
+                        { value: 'poster', label: 'โปสเตอร์' },
+                        { value: 'sticker', label: 'สติกเกอร์' },
+                        { value: 'line', label: 'เส้นบาง' },
+                      ]}
+                    />
+                    {meta[sel]?.style === 'sticker' && (
+                      <div className="field">
+                        <span className="field-label">ตำแหน่ง</span>
+                        <div className="corner-pick" role="radiogroup" aria-label="ตำแหน่งสติกเกอร์">
+                          {CORNERS.map((c) => (
+                            <button
+                              key={c.value}
+                              type="button"
+                              role="radio"
+                              aria-checked={meta[sel]?.corner === c.value}
+                              className={meta[sel]?.corner === c.value ? 'is-active' : ''}
+                              onClick={() => patchOverlay(sel, { corner: c.value })}
+                            >
+                              {c.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {(meta[sel]?.style === 'poster' || meta[sel]?.style === 'line') && (
+                      <Segmented
+                        id="ov-tone"
+                        label="สีตัวอักษร"
+                        value={meta[sel]?.tone ?? 'light'}
+                        onChange={(tone) => patchOverlay(sel, { tone })}
+                        options={[
+                          { value: 'light', label: 'ขาว' },
+                          { value: 'dark', label: 'ดำ' },
+                        ]}
+                      />
+                    )}
+                    {meta[sel] && photos.length > 1 && (
+                      <button type="button" className="link" onClick={() => applyToAll(sel)}>
+                        ใช้แบบนี้กับทุกรูปในรายการนี้
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="form-row">
